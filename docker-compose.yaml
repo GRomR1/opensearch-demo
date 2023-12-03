@@ -1,0 +1,64 @@
+version: '3'
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.9.0
+    container_name: opensearch
+    environment:
+      - cluster.name=opensearch # Name the cluster
+      - node.name=opensearch # Name the node that will run in this container
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m" # Set min and max JVM heap sizes to at least 50% of system RAM
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data # Creates volume called opensearch-data1 and mounts it to the container
+    ports:
+      - 9200:9200 # REST API
+    networks:
+      - opensearch-net # All of the containers will join the same Docker bridge network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -k https://localhost:9200 | grep -q 'Unauthorized'",
+        ]
+    stop_grace_period: 1s  # SIGKILL after 1s
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.9.0
+    container_name: opensearch-dashboards
+    ports:
+      - 5601:5601 # Map host port 5601 to container port 5601
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]' # Define the OpenSearch nodes that OpenSearch Dashboards will query
+    networks:
+      - opensearch-net
+  opensearch-logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest # Make sure the version of opensearch-dashboards matches the version of opensearch installed on other nodes
+    container_name: opensearch-logstash
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+     - OPENSEARCH_USER=admin
+     - OPENSEARCH_PASSWORD=admin
+     - OPENSEARCH_HOSTS=https://opensearch:9200
+    volumes:
+      - logstash-data:/usr/share/logstash/data
+      - ./sample-data:/usr/share/logstash/sample-data:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/templates:/usr/share/logstash/templates:ro
+    networks:
+      - opensearch-net
+
+
+
+
+volumes:
+  opensearch-data:
+  logstash-data:
+
+networks:
+  opensearch-net:

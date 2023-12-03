@@ -1,0 +1,49 @@
+{
+  "index_patterns": ["opensearch-logstash-aol"],
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": "1",
+        "number_of_replicas": "0"
+      }
+    },
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "@version": {
+          "type": "keyword"
+        },
+        "AnonID": {
+          "type": "integer"
+        },
+        "ClickURL": {
+          "type": "text",
+          "fielddata": true,
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "ItemRank": {
+          "type": "integer"
+        },
+        "Query": {
+          "type": "text",
+          "fielddata": true,
+          "fields": {
+            "raw": {
+              "type": "keyword"
+            }
+          }
+        },
+        "time": {
+          "type": "date",
+          "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+        }
+      }
+    }
+  }
+}
